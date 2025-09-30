@@ -9,7 +9,7 @@ services:
       - key: PORT
         value: 4000
       # Config File
-      - key: CONFIG_FILE
+      - key: CONFIG_FILE_PATH
         value: /app/test_config.yaml
       # API Keys
       - key: LITELLM_MASTER_KEY

@@ -545,19 +545,13 @@ class AsyncHTTPHandler:
             - Some users have seen httpx ConnectionError when using ipv6 - forcing ipv4 resolves the issue for them
         """
         #########################################################
-        # AIOHTTP TRANSPORT is off by default
+        # HACK: FORCE AIOHTTP TRANSPORT ALWAYS
         #########################################################
-        if AsyncHTTPHandler._should_use_aiohttp_transport():
-            return AsyncHTTPHandler._create_aiohttp_transport(
-                ssl_context=ssl_context,
-                ssl_verify=ssl_verify,
-                shared_session=shared_session,
-            )
-
-        #########################################################
-        # HTTPX TRANSPORT is used when aiohttp is not installed
-        #########################################################
-        return AsyncHTTPHandler._create_httpx_transport()
+        return AsyncHTTPHandler._create_aiohttp_transport(
+            ssl_context=ssl_context,
+            ssl_verify=ssl_verify,
+            shared_session=shared_session,
+        )
 
     @staticmethod
     def _should_use_aiohttp_transport() -> bool:

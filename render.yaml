@@ -1,12 +1,50 @@
 services:
+  # Development/Performance Testing Service
   - type: web
-    name: openai-proxy
-    runtime: image
-    image:
-      url: ghcr.io/berriai/litellm:main-stable
+    name: litellm-dev-perf-test
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile.dev
+    dockerContext: .
     envVars:
       - key: PORT
         value: 4000
-    numInstances: 1
+      # Config File
+      - key: CONFIG_FILE
+        value: /app/test_config.yaml
+      # API Keys
+      - key: LITELLM_MASTER_KEY
+        value: "sk-1234"
+      - key: OPENAI_API_KEY
+        value: "sk-1234"
+      # Database
+      - key: DATABASE_URL
+        value: "postgresql://ishaanjaffer0324:3rnwpOBau6hT@ep-withered-mud-a5dkdpke-pooler.us-east-2.aws.neon.tech/db_url_aug14?sslmode=require&channel_binding=require"
+      - key: STORE_MODEL_IN_DB
+        value: "True"
+      # Experimental Features
+      - key: EXPERIMENTAL_MULTI_INSTANCE_RATE_LIMITING
+        value: "True"
+      - key: EXPERIMENTAL_OPENAI_BASE_LLM_HTTP_HANDLER
+        value: "True"
+      # Performance tuning
+      - key: NUM_WORKERS
+        value: "4"
+    numInstances: 4
     healthCheckPath: /health/liveliness
-    autoDeploy: true
+    # Auto-deploy on push (you can disable this)
+    autoDeploy: false
+    # Instance type - adjust based on your performance testing needs
+    plan: standard # or starter for lighter testing
+    region: oregon # Choose your preferred region
+
+
+  # Optional: Separate database for dev testing
+  # Uncomment if you want a dedicated database
+  # - type: pserv
+  #   name: litellm-dev-db
+  #   plan: starter
+  #   region: oregon
+  #   ipAllowList: [] # Only allow your app to connect
+  #   databases:
+  #     - name: litellm
+  #       user: litellm

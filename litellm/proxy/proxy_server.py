@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import copy
 import inspect
@@ -5662,8 +5663,8 @@ async def add_messages(
                 param=getattr(e, "param", "None"),
                 code=getattr(e, "code", getattr(e, "status_code", 500)),
             )
-
-
+            
+            
 @router.get(
     "/v1/threads/{thread_id}/messages",
     dependencies=[Depends(user_api_key_auth)],
@@ -9489,6 +9490,7 @@ async def get_routes():
     return {"routes": routes}
 
 
+
 #### TEST ENDPOINTS ####
 # @router.get(
 #     "/token/generate",
@@ -9630,3 +9632,85 @@ async def dynamic_mcp_route(mcp_server_name: str, request: Request):
 app.mount(path=BASE_MCP_ROUTE, app=mcp_app)
 app.include_router(mcp_rest_endpoints_router)
 app.include_router(mcp_discoverable_endpoints_router)
+
+
+
+http_client: Optional[aiohttp.ClientSession] = None
+# for completion
+@app.post("/chat/completions/aiohttp")
+@app.post("/v1/chat/completions/aiohttp")
+async def proxy_completion(request: Request):
+    global http_client
+    # Get the raw request body
+    body = await request.json()
+    
+    # Get the authorization header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    if http_client is None:
+        http_client = aiohttp.ClientSession()
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': auth_header
+    }
+
+    async with http_client.post(
+        'https://exampleopenaiendpoint-production-0ee2.up.railway.app/chat/completions',
+        headers=headers,
+        json=body
+    ) as response:
+        return await response.json()
+
+
+completion_router = Router(
+    model_list=[
+        {
+            "model_name": "fake-openai-endpoint",
+            "litellm_params": {
+                "model": "openai/any",
+                "api_key": "my-key",
+                "api_base": "https://exampleopenaiendpoint-production-0ee2.up.railway.app/",
+            },
+        }
+    ]
+)
+
+@app.post("/chat/completions/router")
+@app.post("/v1/chat/completions/router")
+async def lite_completion(request: Request):
+    # Get the raw request body
+    body = await request.json()
+    body.pop("model", None)
+    
+    # Get the authorization header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    response = await completion_router.acompletion(
+        model="fake-openai-endpoint",
+        **body,
+    )
+    return response
+
+
+@app.post("/chat/completions/lite_sdk")
+@app.post("/v1/chat/completions/lite_sdk")
+async def lite_sdk_completion(request: Request):
+    # Get the raw request body
+    body = await request.json()
+    body.pop("model", None)
+    
+    # Get the authorization header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    response = await litellm.acompletion(
+        model="openai/fake-openai-endpoint",
+        api_base="https://exampleopenaiendpoint-production-0ee2.up.railway.app/",
+        api_key="my-key",
+        **body,
+    )
+    return response

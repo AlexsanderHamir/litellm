@@ -143,29 +143,36 @@ class LLMCachingHandler:
             cached_result: Optional[Any] = None
             final_embedding_cached_response: Optional[EmbeddingResponse] = None
             
+            from litellm.litellm_core_utils.core_helpers import (
+                _get_parent_otel_span_from_kwargs,
+            )
+            from litellm.utils import CustomStreamWrapper
+
+            args = args or ()
+            embedding_all_elements_cache_hit: bool = False
+        
+            # Now that we confirmed caching will happen, do the setup work
+            kwargs = kwargs.copy()
+            #########################################################
+            # Init cache timing metrics
+            #########################################################
+            cache_check_start_time = datetime.datetime.now()
+            cache_check_end_time = None
+            #########################################################
+
+            parent_otel_span = _get_parent_otel_span_from_kwargs(kwargs)
+            kwargs["parent_otel_span"] = parent_otel_span
+            verbose_logger.debug("Checking Async Cache")
+            cached_result = await self._retrieve_from_cache(
+                call_type=call_type,
+                kwargs=kwargs,
+                args=args,
+            )
+            cache_check_end_time = datetime.datetime.now()
+            
             if litellm.cache is not None and self._is_call_type_supported_by_cache(
                 original_function=original_function
             ):
-                
-                from litellm.litellm_core_utils.core_helpers import (
-                    _get_parent_otel_span_from_kwargs,
-                )
-                from litellm.utils import CustomStreamWrapper
-
-                args = args or ()
-                embedding_all_elements_cache_hit: bool = False
-        
-                # Now that we confirmed caching will happen, do the setup work
-                kwargs = kwargs.copy()
-                #########################################################
-                # Init cache timing metrics
-                #########################################################
-                cache_check_start_time = datetime.datetime.now()
-                cache_check_end_time = None
-                #########################################################
-
-                parent_otel_span = _get_parent_otel_span_from_kwargs(kwargs)
-                kwargs["parent_otel_span"] = parent_otel_span
                 verbose_logger.debug("Checking Async Cache")
                 cached_result = await self._retrieve_from_cache(
                     call_type=call_type,

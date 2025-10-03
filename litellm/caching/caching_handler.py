@@ -140,19 +140,13 @@ class LLMCachingHandler:
         ) and (
             kwargs.get("cache", {}).get("no-cache", False) is not True
         ):  # allow users to control returning cached responses from the completion function
-            cached_result: Optional[Any] = None
-            final_embedding_cached_response: Optional[EmbeddingResponse] = None
-            
             from litellm.litellm_core_utils.core_helpers import (
                 _get_parent_otel_span_from_kwargs,
             )
             from litellm.utils import CustomStreamWrapper
 
-            args = args or ()
-            embedding_all_elements_cache_hit: bool = False
-        
-            # Now that we confirmed caching will happen, do the setup work
             kwargs = kwargs.copy()
+            args = args or ()
             #########################################################
             # Init cache timing metrics
             #########################################################
@@ -160,15 +154,12 @@ class LLMCachingHandler:
             cache_check_end_time = None
             #########################################################
 
+
             parent_otel_span = _get_parent_otel_span_from_kwargs(kwargs)
             kwargs["parent_otel_span"] = parent_otel_span
-            verbose_logger.debug("Checking Async Cache")
-            cached_result = await self._retrieve_from_cache(
-                call_type=call_type,
-                kwargs=kwargs,
-                args=args,
-            )
-            cache_check_end_time = datetime.datetime.now()
+            final_embedding_cached_response: Optional[EmbeddingResponse] = None
+            embedding_all_elements_cache_hit: bool = False
+            cached_result: Optional[Any] = None
             
             if litellm.cache is not None and self._is_call_type_supported_by_cache(
                 original_function=original_function
@@ -277,12 +268,14 @@ class LLMCachingHandler:
     ) -> CachingHandlerResponse:
         from litellm.utils import CustomStreamWrapper
 
-        args = args or ()
+
         cached_result: Optional[Any] = None
+        
         # Check if caching should be performed BEFORE doing expensive kwargs copy
         if litellm.cache is not None and self._is_call_type_supported_by_cache(
             original_function=original_function
         ):
+            args = args or ()
             # Now that we confirmed caching will happen, prepare kwargs
             new_kwargs = kwargs.copy()
             new_kwargs.update(

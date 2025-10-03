@@ -908,8 +908,6 @@ def _get_wrapper_timeout(
     return timeout
 
 
-from litellm.proxy.common_utils.performance_utils import profile_endpoint
-
 
 def check_coroutine(value) -> bool:
     return get_coroutine_checker().is_async_callable(value)

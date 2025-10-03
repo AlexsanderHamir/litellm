@@ -1433,7 +1433,6 @@ def client(original_function):  # noqa: PLR0915
                 )
                 or kwargs.get("caching", False) is True
             ) and kwargs.get("cache", {}).get("no-cache", False) is not True:
-                print("called cache")
                 _caching_handler_response = await _llm_caching_handler._async_get_cache(
                     model=model or "",
                     original_function=original_function,
@@ -1453,7 +1452,6 @@ def client(original_function):  # noqa: PLR0915
                 elif _caching_handler_response.embedding_all_elements_cache_hit is True:
                     return _caching_handler_response.final_embedding_cached_response
                 
-            print("passed cache")
             # CHECK MAX TOKENS
             if (
                 kwargs.get("max_tokens", None) is not None
